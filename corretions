@@ -1,0 +1,598 @@
+Voici les réponses structurées en deux parties : une réponse acceptée/demandé et une réponse idéale/difficile. Des éléments juste de la réponsse idéal permettait d'avoir des pts supplémentaire.
+
+Question 1 (1 point) : Sortie du code
+Quelle sera la sortie du code suivant ? Expliquez pourquoi, par étapes.
+
+int x = 0;
+int y = 3;
+
+if (y == x)
+    printf("Condition vérifiée\n");
+
+if (y != x)
+    printf("Erreur inattendue\n");
+(ici il n'y avais pas de piège)
+
+Réponse Acceptée
+Sortie : Erreur inattendue
+
+Explication par étapes :
+
+Initialisation :
+int x = 0; : La variable x est initialisée à 0.
+int y = 3; : La variable y est initialisée à 3.
+Première condition :
+if (y == x) : Vérifie si y est égal à x. Ici, 3 == 0 est faux, donc le printf("Condition vérifiée\n"); n’est pas exécuté.
+Deuxième condition :
+if (y != x) : Vérifie si y est différent de x. Ici, 3 != 0 est vrai, donc le printf("Erreur inattendue\n"); est exécuté.
+Résultat : La seule sortie est "Erreur inattendue" suivi d’un retour à la ligne.
+Réponse Idéale (+1pts)
+Sortie : Erreur inattendue
+
+Définition et Allocation :
+int x = 0; : Déclare une variable entière x sur la pile (stack) et l’initialise à 0 (32 bits sur la plupart des architectures modernes, 64bits possible, valeur hexadecimal : 0x00000000).
+int y = 3; : Déclare une variable entière y sur la pile et l’initialise à 3 (0x00000003).
+Évaluation de la première condition :
+if (y == x) : L’opérateur == compare les valeurs de y et x. Le processeur charge les registres avec y (3) et x (0) (instruction LOAD en asm), effectue une soustraction interne pour tester l’égalité (3 - 0 ≠ 0), et met à jour le drapeau zéro (ZF = 0, pas d’égalité). La condition est fausse, donc le bloc printf est sauté (instruction JMP qui modifie le compteur ordinal).
+Évaluation de la deuxième Condition :
+if (y != x) : L’opérateur != teste l’inégalité. La comparaison (3 - 0 ≠ 0) donne ZF = 0, et la condition est vraie. Le compilateur génère un saut conditionnel (e.g., JNE en assembleur x86) vers l’instruction printf.
+printf("Erreur inattendue\n") : La chaîne littérale est stockée dans la section .rodata (mémoire en lecture seule), et son adresse est passée à la fonction printf. La sortie est écrite sur stdout, avec \n ajoutant un retour à la ligne.
+Comportement prévisible : Aucun effet de bord ou optimisation inattendue n’intervient ici, car les variables sont locales, initialisées, et les conditions sont simples. L'exécution est donc déterministe.
+Question 2 (1 point) : Zones mémoire des variables
+Comment s’appellent les zones mémoire associées à chaque variable ?
+
+const char *message = "La choucroute avec la biere";
+
+int main() {
+    int status = 5;
+    int *result = (int*) malloc(sizeof(int));
+}
+Réponse Acceptée
+const char *message : La chaîne "La choucroute avec la biere" est stockée dans une zone mémoire en lecture seule (souvent appelée "section de données en lecture seule" ou .rodata, il est possible que .text soit aussi utilisé). Le pointeur message lui-même est une variable globale, stockée dans la section des données initialisées (.data).
+int status = 5; : Variable locale à main, stockée sur la pile (stack).
+int *result = (int*) malloc(sizeof(int)); : Le pointeur result est sur la pile, mais l’espace alloué par malloc (4 octets pour un int) est dans le tas (heap).
+Réponse Idéale (+2 pts)
+const char *message = "La choucroute avec la biere";
+Chaîne Littérale : La chaîne elle-même est un tableau de caractères terminé par \0 (27 caractères + 1 = 28 octets). Elle est placée dans la section .rodata (.text possible) du fichier binaire (mémoire statique en lecture seule, protégée par le système d’exploitation via des permissions mémoire).
+Détail++ : Sur ARM et x86, cette section est alignée sur un multiple de 4 ou 8 octets pour optimiser les accès.
+Pointeur message : Variable globale, Comme elle est initialisée, elle réside dans la section .data (données initialisées).
+Sa taille est celle d’un pointeur (8 octets sur une architecture 64-bit), et sa valeur est l’adresse de la chaîne dans .rodata.
+int status = 5;
+Variable automatique (auto) locale à main, mots cléf déprécier en c++ et c23.
+Elle est allouée sur la pile dans la stack frame de main.
+La pile croît vers les adresses basses sur ARM et inverssement sur x86.
+Status occupe 4 octets (taille d’un int), initialisés à 0x00000005, sur la pluspart des architectures.
+L’espace est libéré automatiquement à la sortie de main (i.e la stack frame).
+int *result = (int*) malloc(sizeof(int));
+Pointeur result : Variable locale sur la pile, occupant 8 octets (pointeur 64-bit).
+Sa valeur initiale est l’adresse renvoyée par malloc.
+Zone Allouée : malloc(sizeof(int)) réserve 4 octets dans le tas (heap), une région dynamique gérée par le système (associé a une page dans la virtual memory), ici malloc va probablement faire un context switch (appel système).
+La Heap est une zone non contiguë allouée par des appels système comme brk ou mmap. (utilisé par malloc)
+L’adresse renvoyée est alignée (typiquement sur 8 octets sur ARM64) pour optimiser les performances.
+Question 3 (1 point) : Taille de la structure
+Quelle est la taille de la structure suivante ? Expliquez pourquoi. Existe-t-il un type de base qui pourrait stocker la totalité des informations de cette structure ? Si oui, lequel et quel serait l’intérêt ? Sinon, pourquoi ?
+
+struct Data {
+    char x;
+    short y;
+};
+Réponse Acceptée
+Taille : 4 octets
+Explication :
+char x : 1 octet.
+short y : 2 octets.
+Total théorique : 1 + 2 = 3 octets
+Cependant, à cause de l’alignement mémoire, un octet de remplissage (padding) est ajouté après x pour aligner y sur une frontière de 2 octets (taille de short).
+Donc, la taille réelle est 4 octets.
+Type de Base : Oui, un int (4 octets) pourrait stocker les informations. Intérêt : Simplifier le stockage ou les accès mémoire (typiquement un seul Load/Store au lieu de 2) Mais on perdrait la séparation explicite entre x et y.
+
+Réponse Idéale (+3 pts)
+Taille : 4 octets
+Explication Détaillée :
+char x : 1 octet (8 bits, signé ou non selon la plateforme, typiquement 0x00 à 0xFF).
+short y : 2 octets (16 bits, signé, plage -32768 à 32767).
+Alignement Mémoire :
+Sur CPU ARM et x86, le compilateur (e.g., GCC/clang) aligne les membres des structures sur des frontières correspondant à leur taille naturelle pour optimiser les accès mémoire. short nécessite un alignement sur 2 octets (adresse multiple de 2).
+Offset de x : 0 (1 octet utilisé) offsetof(x) = 0 en C/C++
+Offset de y : Doit commencer à une adresse paire.
+Puisque x finit à l’offset 1, 1 octet de padding est inséré (offset 1 inutilisé), et y commence à l’offset 2. offsetof(x) = 2
+Taille totale : 2 (début de y) + 2 (taille de y) = 4 octets, alignée sur 4 octets (multiple commun).
+Vérification : sizeof(struct Data) renvoie 4, confirmant le padding.
+Sans padding (option -fpack-struct), ce serait 3 octets, mais cela dégraderait les performances de lecture.
+Type de Base : Oui, un int (4 octets sur archi 32 et 64 bits).
+
+Mappage Possible :
+
+Bits 0-7 : x.
+Bits 8-23 : y.
+Bits 24-31 : inutilisés (ou pour autre usage).
+Intérêt :
+
+Réduction de la complexité d’accès (un seul registre au lieu de deux accès mémoire).
+Compatible avec les CPU ARM et x86, 32-bit et 64 bits (e.g., instruction LDR pour charger 4 octets).
+Cette méthode est utilisé pour le "package" de donnée. Par exemple pour la constitution de packet ip et la communication sur réseaux.
+Limites :
+
+Perte de sémantique : x et y ne sont plus distincts
+Nécessitant des masques binaires (e.g., x = int_val & 0xFF, y = (int_val >> 8) & 0xFFFF).
+Aucun intérêt sur les prcesseurs 8bits (e.g 8080, 8086, ...)
+Moins lisible et plus sujet aux erreurs.
+Question 4 (2 points) : Compter les voyelles
+Écrivez une fonction en C qui parcourt une chaîne de caractères avec un pointeur et compte le nombre de voyelles (a, e, i, o, u, en minuscules uniquement). Exemple : "hello" retourne 2.
+
+int count_vowels(char *str) {
+    int count = 0;
+    // TODO
+    return count;
+}
+Réponse Acceptée
+int count_vowels(char *str) {
+    int count = 0;
+    while (*str != '\0') {
+        if (*str == 'a' || *str == 'e' || *str == 'i' || *str == 'o' || *str == 'u')
+            count++;
+        str++;
+    }
+    return count;
+}
+Explication :
+
+La boucle while (*str != '\0') parcourt la chaîne jusqu’au caractère nul.
+Pour chaque caractère, on teste s’il est une voyelle avec des comparaisons explicites.
+str++ avance le pointeur.
+Exemple : "hello" → h (non), e (+1), l (non), l (non), o (+1) → retourne 2.
+Solution identique, légèrement plus lisible: (attention pas de count++ a chaque case et sans break)
+
+int count_vowels(char *str) {
+    int count = 0;
+    for (; *str; str++) {
+        switch (*str) {
+            case 'a':
+            case 'e':
+            case 'i':
+            case 'o':
+            case 'u':
+                count++;
+                break;
+        }
+    }
+    return count;
+}
+Réponse Idéale (+ 1pts)
+int count_vowels(char *str) {
+    int count = 0;
+    for (; *str; str++)
+        count += (*str == 'a' | *str == 'e' | *str == 'i' | *str == 'o' | *str == 'u');
+    return count;
+}
+Explication Détaillée :
+
+Boucle Optimisée : for (; *str; str++) est concis et idiomatique en C. *str est faux quand \0 est atteint (valeur 0).
+Performance : Pas de condition dans la boucle, donc pas de branchement inutile. == retourne les valuers {0,1} et le ou binaire superpose les résultats (e.g 0 | 1 = 1). Le résultat étant un entier (pas de boolean en C) l'addition est direct.
+Exemple : "hello" → h (ignoré), e (+1), l (ignoré), l (ignoré), o (+1) → 2.
+Robustesse : Fonctionne pour toute chaîne bien terminée, sans effet de bord.
+Question 5 (1 point) : Erreur dans le code
+Quelle erreur est faite dans le code suivant ? Que va-t-il se passer à l’exécution ? Qu’est-ce que le programmeur a écrit dans x ?
+
+int main()
+{
+    int *x = 0;
+    x = (int*)&x;
+    *x = 5;
+    return 0;
+}
+Réponse Acceptée
+Erreur : Le programmeur essaie d’écrire 5 à l’adresse pointée par x, qui est l’adresse de x elle-même. Ce qui est une erreur logique.
+Exécution : Le programme va planter (segmentation fault) ou d’avoir un comportement indéfini, car *x = 5 écrit dans une zone mémoire réservée pour le pointeur lui-même.
+Dessin :
+Initialement : x = 0 (pointeur nul sur la stack).
+Après x = (int*)&x : x contient son propre emplacement mémoire (e.g., 0x7fff1234).
+*x = 5 : Écrit 5 à 0x7fff1234, écrasant la valeur de x.
+Réponse Idéale
+Le code crée une auto-référence incorrecte en assignant à x son propre emplacement mémoire, puis tente de le modifier, violant les règles de gestion mémoire et entraînant un comportement indéfini (UB).
+
+Exécution Détaillée :
+
+int *x = 0;  // x est un pointeur sur la pile, initialisé à NULL (0x0). Sa taille est probablement 8 octets. Supposons son adresse : 0x7fff1234.
+x = (int*)&x; // &x est l’adresse de x (0x7fff1234). Le cast (int*) est inutile mais valide. Après cela, x contient 0x7fff1234, pointant sur lui-même.
+*x = 5;  // Dereférence x (valeur : 0x7fff1234) et écrit 5 à cette adresse. Cela remplace la valeur de x (le pointeur) par 0x7fff00000005.  
+Problème, en fonction de l'architecture (32bit ou 64bits) le comportement seras différent. Sachant qu'un eniter est sur 32bits, si le pointeur est aussi sur 32bits alors la valeurs est 0x5. Sur une architecture 64bits, le pointeur a donc 64bits et on écris 32bits dedans. La valeur de l'adresse final est donc incomplete. Encore une fois en fonction de l'endianesse (l'ordre des bits) on peu ce retrouver avec deux résultats différent (soit 0x7ffc00000005, soit approximativement 0x05000000fc7f).
+
+Si une instruction ultérieure utilise x comme pointeur (e.g., autre *x), elle tentera d’accéder à une adresse (e.g 0x00000005) invalide (hors espace utilisateur), provoquant un SIGSEGV.
+Ici, comme return 0 suit immédiatement, le crash peut ne pas se produire, mais le comportement reste indéfini (compilateur peut réorganiser ou optimiser).
+
+Question 6 (2 points) : Fonction optimisée pour la valeur absolue
+Écrivez une fonction en C qui retourne la valeur absolue d’un entier de façon optimisée.
+
+Réponse incorrect
+inline int abs(int n) {
+    return (n<0) ? n*(-1) : n; // c'est un if + pourquoi utiliser une mutliplication ?
+    return (n<0) ? -n : n; // c'est un if !
+}
+inline int abs(int n) {
+    // ne marche pas avec 0
+    // risque de dépassement du int
+    // 40000000*40000000 = -416677888
+    // (-40000000) * (-40000000) = -416677888
+    // Dans les deux cas : -416677888 / 40000000 = -11 ! aie
+    return (n*n) / n; 
+}
+Réponse moyenne (1 pts)
+inline int abs(int n) {
+    return (1 - 2*(n<0)) * n; // multiplication 1-7 cycle cpu boff ~16 cycle
+    return (1 - ((n<0)<<2)) * n; // sémantiquement identique mais ~10 cycle 
+}
+Réponse Acceptée (2 pts)
+inline int abs(int n) {
+    return (-(n<0) & (-n)) | (-(n>0) & (-n));
+}
+Explication :
+
+partie négative
+n<0 = {0,1} (1 cycle)
+-(n<0) = {0b0000000, 0b111111111} (1 cycle)
+neg = -(n<0) & (-n) = {0, -n} (2 cycle)
+partie positive
+n>0 = {1,0} (1 cycle)
+-(n>0) = {0b111111111, 0b0000000} (1 cycle)
+pos = -(n>0) & n = {n, 0} (1 cycle)
+combinaison
+neg | pos (1 cycle) Optimisation + :
+inline cette fonction pour éviter l’appel de fonction.
+total de cycle cpu : 8 cycle maximum
+possibilité d'utiliser les instruction simd pour avoir 4 cycle
+Réponse Idéale (3 pts)
+// Patented in the USA on June 6, 2000 by Vladimir Yu Volkonsky and assigned to Sun Microsystems
+inline int abs(int n) {
+    int mask = n >> sizeof(int) * CHAR_BIT - 1; // >> 4*8-1 = 31
+    return (n ^ mask) - mask;    // Valeur absolue bit à bit
+}
+Explication Détaillée :
+
+Objectif d’Optimisation : Éviter une branche conditionnelle (if), qui peut causer des erreurs de prédiction de branche sur les CPUs moderne qui prend beaucoup de temps mais statistiquement avantageux, et utiliser des opérations bit à bit rapides à la place.
+
+Étapes :
+
+int mask = n >> 31; Décalage arithmétique à droite de 31 bits (taille d’un int sur 32 bit) (identique a -(n<0)).
+Si n est négatif (bit de signe = 1), on a 0xffffffff.
+n ^ mask inversse tout les bit
+-mask = -1 pour faire le complément à 2
+Si n est positif ou nul (bit de signe = 0), donc mask = 0x00000000.
+n ^ mask ne change rien
+- mask = -0 ne change rien
+Question 7 (1 point) : Explication de swap
+Expliquez la fonction suivante, que se passe-t-il lors de son utilisation ? Étape par étape.
+
+inline int swap(int a, int b) {
+    int tmp = a;
+    a = b;
+    b = tmp;
+}
+
+int x = 0, y = 2;
+swap(x, y); // Que vaut x et y après ?
+Réponse Acceptée
+La fonction swap essaie d’échanger les valeurs de a et b. Étapes dans swap :
+
+int tmp = a; // Sauvegarde a dans tmp.  
+a = b; // Remplace a par b.  
+b = tmp; // Remplace b par tmp (ancienne valeur de a).
+Utilisation : swap(x, y) avec x = 0, y = 2.
+
+a = 0, b = 2.  
+tmp = 0, a = 2, b = 0.
+Résultat : Rien ne change pour x et y, qui valent toujours 0 et 2. Les paramètres a et b sont passés par valeur (copies), donc les modifications dans swap n’affectent pas x et y.
+
+Réponse Idéale (2 pts)
+inline int swap(int a, int b) : Fonction marquée inline, suggérant au compilateur (e.g., GCC / clang) de remplacer l’appel par le code lui-même pour éviter l’overhead. Les paramètres a et b sont passés par valeur (copies locales sur la pile). Mais ! inline ne change donc pas le comportement. On ce retrouve avec le code suivant :
+
+int x = 0, y = 0;
+int a = x, b = y;
+int tmp = a;
+a = b;
+b = tmp;
+// pas de changement sur x et y
+Étapes dans swap(0, 2) :
+
+Passage des Arguments : x = 0 et y = 2 (e.g globales, section .data).
+Lors de l’appel, a et b sont alloués sur la pile (i.e stack frame) avec a = 0 (0x00000000), b = 2 (0x00000002).
+int tmp = a; tmp est une variable locale (pile), initialisée à 0.
+a = b; La copie locale a est mise à 2.
+b = tmp; La copie locale b est mise à 0.
+Fin de la Fonction :
+Les variables locales a, b, et tmp sont désallouées (pile dépilée), la stack frame est supprimé.
+Aucun effet sur x et y.
+Après swap(x, y) : x = 0, y = 2 (inchangés).
+Passage par Valeur : En C, les paramètres sont des copies, pas des références. Pour échanger x et y, il faudrait passer des pointeurs : void swap(int *a, int *b).
+
+inline int swap(int *a, int *b) {
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+int x = 0, y = 2;
+swap(&x, &y);
+Donc après compilation on a le "code" suivant :
+
+int x = 0, y = 0;
+int *a = &x, *b = &y;
+int tmp = *a;
+*a = *b;
+*b = tmp;
+// changement sur x et y grace au ptr
+Question 8 (1 point) : Explication et risque du code
+Expliquez le code suivant, quel est le risque ? Que vaut l’entier x après l’exécution ?
+
+typedef struct { char a, b, c, d; } octets;
+int x = 0;
+((octets*)&x)->a = 0xAA;
+((octets*)&x)->b = 0xBB;
+((octets*)&x)->c = 0xCC;
+((octets*)&x)->d = 0xDD;
+Réponse Acceptée
+Le code définit une structure octets avec 4 champs char (1 octet chacun).
+
+int x = 0; x est un entier (4 octets), initialisé à 0.
+((octets*)&x) Convertit l’adresse de x en un pointeur vers octets, permettant d’accéder à ses octets individuellement.
+Les affectations remplacent chaque octet de x :
+.a = 0xAA, .b = 0xBB, .c = 0xCC, .d = 0xDD.
+Valeur de x : 0xDDCCBBAA (accepté).
+Valeur de x : 0xAABBDDCC (accepté).
+Risque : En fonction de l'architecture le résultat est différent
+
+Réponse Idéale (2 pts)
+typedef struct { char a, b, c, d; } octets; Structure de 4 octets (chaque char = 1 octet, pas de padding car alignement naturel sur 1 octet).
+Taille totale : sizeof(octets) = 4
+int x = 0; : x est un entier (4 octets), alloué soit dans .data soit dans la stack (si on considère le code dans une fonction).
+((octets*)&x) : Prend l’adresse de x (e.g., 0xXXXX1234) et la caste en pointeur vers octets.
+Cela suppose que x peut être interprété comme une structure octets.
+.a = 0xAA : Écrit 0xAA à l’offset 0 (premier octet de x).
+.b = 0xBB : Écrit 0xBB à l’offset 1.
+.c = 0xCC : Écrit 0xCC à l’offset 2.
+.d = 0xDD : Écrit 0xDD à l’offset 3.
+Mémoire : [0xAA, 0xBB, 0xCC, 0xDD]
+x = 0xDDCCBBAA. little-endian
+x = 0xAABBDDCC. big-endian
+Taille de int : Si int est 2 octets (plateformes 16-bit), les accès à .c et .d dépassent x, causant une écriture hors limites
+Le code suivant est identique
+
+int x = 0;
+char *octets = (char*)&x;
+octets[0] = 0xAA;
+octets[1] = 0xBB;
+octets[2] = 0xDD;
+octets[3] = 0xEE;
+Question 1 (2 pts)
+Question : Expliquez ce qu’est une section critique. Apportez un exemple, proposez une analogie du monde réel. Que se passe-t-il quand deux threads modifient une même variable ? (ex : ++ et --)
+
+Réponse Acceptée
+Une section critique est une partie du code où un thread accède à une ressource partagée (par exemple, une variable ou une structure de données) et où cet accès doit être exclusif pour éviter des interférences avec d’autres threads. Elle doit être protégée pour garantir la cohérence des données.
+
+Réponse Idéal (+2 pts)
+Une section critique est une séquence d’instructions dans un programme multi-thread où un thread accède à une ressource partagée (variable, mémoire, fichier, etc.), et cet accès doit être atomique et exclusif pour préserver l’intégrité des données et éviter les corruptions dues à des exécutions concurrentes. Elle nécessite une synchronisation (e.g., mutex, sémaphore) pour garantir qu’un seul thread l’exécute à la fois, minimisant les risques de data races et assurant la sérialisabilité des opérations.
+
+Analogie du Monde Réel (Train et Jetons au Sri Lanka) : Le système de jetons (tablet exchanging system) du Sri Lanka, utilisé sur la ligne de montagne (Main Line, Colombo-Kandy-Badulla), est une méthode héritée de l’ère britannique pour gérer les voies uniques. Prenons l’exemple d’un tronçon entre deux gares, disons Kadigammuwa et Kandy :
+
+Un jeton (tablet) est un objet physique unique pour ce tronçon, stocké dans une machine à jetons à chaque gare.
+Pour qu’un train parte de Kadigammuwa vers Kandy, le chef de gare à Kadigammuwa doit coopérer avec celui de Kandy via télégraphe pour libérer le jeton. Le conducteur prend le jeton, garantissant qu’il est le seul à pouvoir utiliser la voie.
+À Kandy, il rend le jeton, qui est réinséré dans la machine, permettant au prochain train de circuler dans l’autre sens ou de suivre.
+Lien avec la Section Critique : Le jeton agit comme un mutex. La voie est la ressource partagée (comme une variable), et le jeton assure l’exclusivité : un seul train (thread) à la fois. Sans jeton, deux trains entreraient en collision (data race). Dans un programme, un thread doit « prendre » le mutex pour entrer dans la section critique et le « rendre » pour que d’autres puissent y accéder, évitant les corruptions.
+Que se passe-t-il avec deux threads modifiant une variable (++ et --) ?
+
+Sans Synchronisation :
+Contexte : int x = 0 dans la mémoire partagée.
+Déroulement de x++ (Thread 1) :
+LDR R0, [x] : Lit x = 0 dans le registre R0.
+ADD R0, R0, #1 : Calcule 1.
+STR R0, [x] : Écrit 1 dans x.
+Déroulement de x-- (Thread 2) :
+LDR R1, [x] : Lit x.
+SUB R1, R1, #1 : Calcule -1.
+STR R1, [x] : Écrit dans x.
+Exemple d’Interférence :
+T1 lit x = 0 (R0 = 0).
+T2 lit x = 0 (R1 = 0) avant que T1 n’écrive.
+T1 écrit x = 1.
+T2 écrit x = -1, écrasant 1.
+Résultat : x = -1 (ou 1 si T1 écrit après T2, ou 0 si les lectures/écritures s’entrelacent différemment).
+Problème : Condition de Course : Les opérations ne sont pas atomiques ; elles se décomposent en plusieurs instructions ASM, permettant des chevauchements.
+Sur certaines architectures il peut y avoir superposition d'écriture sur les octet individuelement
+e.g CPU 8bit telque 8080 et 8086 écriture de -1 et de 0 peuvent entrelacer les octets telque 0xFF00FF00, 0xFFFF0000, 0x0000FFFF, 0x00FFFF00, ....
+e.g CPU 16bit 0xFFFF0000, 0x0000FFFF
+Avec Synchronisation (Mutex) :
+
+T1 verrouille le mutex, lit 0, calcule 1, écrit x = 1, déverrouille.
+T2 attend, verrouille, lit 1, calcule 0, écrit x = 0, déverrouille.
+Résultat : x = 0, cohérent avec ++ suivi de --.
+Exemple vue en TP pour garantir la synchronisation (i.e l'exclusion mutuel) :
+
+#include <pthread.h>
+
+int counter = 0;
+pthread_mutex_t lock;
+
+void* increment(void* arg) {
+    for (unsigned int i = 0; i<10000; ++i) {
+        pthread_mutex_lock(&lock);   // Début section critique
+        counter++;                   // Modification de la variable partagée
+        pthread_mutex_unlock(&lock); // Fin section critique
+    }
+    return NULL;
+}
+
+void* decrement(void* arg) {
+    for (unsigned int i = 0; i<10000; ++i) {
+        pthread_mutex_lock(&lock);   // Début section critique
+        counter++;                   // Modification de la variable partagée
+        pthread_mutex_unlock(&lock); // Fin section critique
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t t1, t2;
+    pthread_mutex_init(&lock, NULL);
+    pthread_create(&t1, NULL, increment, NULL);
+    pthread_create(&t2, NULL, decrement, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    printf("Counter: %d\n", counter); // Devrait afficher 0; si le mutex n'est pas utilisé, le résultat est aléatoire
+    pthread_mutex_destroy(&lock);
+    return 0;
+}
+Question 2 (5 points) : Optimisation du programme WeedElec
+Un programme d’analyse d’image embarqué dans un robot agricole (WeedElec) rencontre des problèmes de performances. Son but est de détecter, classer et éliminer des adventices (mauvaises herbes). Actuellement, chaque étape du programme est exécutée séquentiellement : (1) capture de l’image, (2) segmentation sol/végétation, (3) détection des plantes, (4) classification et (5) activation d’un laser qui élimine la plante non désirée. Ce code est exécuté sur une puce ARM Cortex-A78AE (6 cœurs) et un GPU pour le deep learning. Idéalement, seule l’image la plus récente est traitée. Si vous pensez ne pas avoir le temps, proposez un schéma de synchronisation, le plus détaillé possible (2 pts).
+
+Diagram approximatif
+
+Réponse accepté
+Le problème est que l’exécution séquentielle ne tire pas parti des 6 cœurs. Une solution est de paralléliser les étapes avec des threads POSIX (Pthreads), en synchronisant les dépendances (par exemple, la segmentation attend la capture). Pour ne traiter que l’image récente, un système de double buffer peut être utilisé.
+
+#include <pthread.h>
+#include <semaphore.h>
+
+typedef struct {
+    float* raw;
+    int width, height, channel;
+} MultiSpectralImageData;
+
+typedef struct {
+    unsigned int x, y, w, h;
+} vec4i;
+
+typedef struct {
+    MultiSpectralImageData *image[2]; // Double buffer : 0 = actif, 1 = en écriture
+    unsigned char *segmented;
+    vec4i *plant_positions;
+    int *classifications;
+    int plant_count;
+    int active_buffer; // 0 ou 1
+    pthread_mutex_t buffer_lock;
+} ProcessedData;
+
+sem_t sem_capture, sem_seg, sem_det, sem_class, sem_kill;
+ProcessedData *data;
+
+void* capture(void* arg) {
+    while (1) {
+        pthread_mutex_lock(&data->buffer_lock);
+        camera_capture(data->image[1 - data->active_buffer]); // Écrit dans le buffer inactif
+        pthread_mutex_unlock(&data->buffer_lock);
+    }
+}
+
+void* segment(void* arg) {
+    while (1) {
+        sem_wait(&sem_seg); // Attend le jeton de capture
+        pthread_mutex_lock(&data->buffer_lock);
+        data->active_buffer = 1 - data->active_buffer; // Échange buffers
+        pthread_mutex_unlock(&data->buffer_lock);
+        data->segmented = segment_image(data->image[data->active_buffer]);
+        sem_post(&sem_det); // Passe le jeton à detect
+    }
+}
+
+void* detect(void* arg) {
+    while (1) {
+        sem_wait(&sem_det); // Attend le jeton de segment
+        data->plant_positions = detect_plants(data->segmented, &data->plant_count);
+        sem_post(&sem_class); // Passe le jeton à classify
+    }
+}
+
+void* classify(void* arg) {
+    while (1) {
+        sem_wait(&sem_class); // Attend le jeton de detect
+        data->classifications = classify_plants(data->plant_positions, data->plant_count);
+        sem_post(&sem_kill); // Passe le jeton à kill
+    }
+}
+
+void* kill(void* arg) {
+    while (1) {
+        sem_wait(&sem_kill); // Attend le jeton de classify
+        kill_weed(data);
+        destroy_processing_data(data); // Réinitialise pour la prochaine itération
+        sem_post(&sem_seg); // Renvoie le jeton à segmentation
+    }
+}
+
+int main() {
+    data = new_processing_data();
+    data->active_buffer = 0;
+    data->image[0] = malloc(sizeof(MultiSpectralImageData));
+    data->image[1] = malloc(sizeof(MultiSpectralImageData));
+    
+    sem_init(&sem_capture, 0, 1); // Débute avec capture
+    sem_init(&sem_seg, 0, 0);
+    sem_init(&sem_det, 0, 0);
+    sem_init(&sem_class, 0, 0);
+    sem_init(&sem_kill, 0, 0);
+    pthread_mutex_init(&data->buffer_lock, NULL);
+    
+    pthread_t t[5];
+    pthread_create(&t[0], NULL, capture, NULL);
+    pthread_create(&t[1], NULL, segment, NULL);
+    pthread_create(&t[2], NULL, detect, NULL);
+    pthread_create(&t[3], NULL, classify, NULL);
+    pthread_create(&t[4], NULL, kill, NULL);
+    
+    for (int i = 0; i < 5; i++)
+        pthread_join(t[i], NULL);
+    
+    return 0;
+}
+Question 3 (3 pts)
+Après une mise à jour du robot, d'autres lasers ont été installés pour pallier les problèmes de vitesse d'extermination et de maintenance. En effet, le laser n'a pas le temps de refroidir, impliquant une surchauffe constante qui le fait griller fréquemment. On vous demande donc de paralléliser la fonction kill_weed, chaque thread éliminant une plante toutes les secondes. \texttt{Si vous pensez ne pas avoir le temps, proposez une idée vue en TP (1 pt).}
+
+Diagram
+
+Réponsse accepté
+#include <pthread.h>
+#include <unistd.h>
+
+#define LASER_COUNT 10
+
+sem_t available;
+
+typedef struct {
+    ProcessedData *data;
+    int index;
+    int laser_id;
+} LaserTask;
+
+void* laser_thread(void* arg) {
+    LaserTask *task = (LaserTask*)arg;
+    
+    laser_target(task->laser_id, task->data->plant_positions[task->index]);
+    sleep(1); // Refroidissement de 1 seconde
+    
+    free(task);
+    sem_post(&available);
+    
+    return NULL;
+}
+
+void kill_weed(ProcessedData *data) {
+  pthread_t thread;
+  
+  sem_init(&available, 0, LASER_COUNT);
+
+  for (int i = 0; i < data->plant_count && active_lasers < LASER_COUNT; i++) {
+      if (data->classifications[i] == 0) {
+          pthread_t thread;
+          sem_wait(&available);
+          LaserTask *task = malloc(sizeof(LaserTask));
+          task->data = data;
+          task->index = i;
+          task->laser_id = active_lasers;
+          pthread_create(&threads, NULL, laser_thread, task);
+      }
+  }
+
+  for (int i = 0; i < LASER_COUNT; i++)
+      sem_wait(&available);
+      
+  // pthread_join non nécéssaire
+}
