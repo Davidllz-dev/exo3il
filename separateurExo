@@ -1,0 +1,112 @@
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct token
+{
+        char *separator; // String of separator characters
+        char *data;      // Input string to be tokenized
+        int size;        // Size of input string
+} token;
+
+/**
+ * Function to check if a character is a separator
+ * Time complexity:
+ *    - O(1), in most cases, explain why
+ *    - O(n), where n is the length of the separator string
+ * Space complexity:
+ *    - O(1), always
+ * Optimize the compilation of this function !
+ **/
+int isSeparator(token *tk, char data)
+{
+//separator = tk->separateur;
+while(*tk->separator)
+{
+    if(data == *tk->separator)
+        return true;
+    tk->separator++;
+}
+    return false;
+}
+
+/**
+ * Function to initialize the token structure
+ * Time complexity:
+ *      - O(n), where n is the length of the input string
+ * Space complexity:
+ *      - O(1) additional space (modifies input in-place)
+ **/
+token *initializeTokenizer(char *data, char *separator)
+{
+    token *tk = (token *)malloc(sizeof(token));
+    tk->data = data;
+    tk->separator = separator;
+    tk->size = 0;
+    return tk;
+}
+
+/**
+ * Function to get the next token
+ * Time complexity:
+ *      - minimum O(1), explain why
+ *      - mean O(1), explain why
+ *      - maximum O(11), in this exemple explain why
+ * Space complexity:
+ *      - O(1)
+ **/
+char *getNextToken(token *tk, char *current)
+{
+    while(*current && isSeparator(tk, *current))
+        current++;
+    if(*current == '\0')
+        return NULL;
+    char *start = current;
+    while(*current && !isSeparator(tk, *current))
+        current++;
+    if(*current)
+        *current = '\0';
+    return start;
+    return 0;
+}
+
+/**
+ * Function to move to the end of the current token
+ * Time complexity: O(n), where n is the length of the current token
+ * Space complexity: O(1)
+ */
+
+char *moveToNextToken(char *current)
+{
+    while(*current)
+        current++;
+    return current;
+}
+
+int main()
+{
+    char data[] = "Hello World!u   ;+ pouet";
+    char separator[] = " ,;:?./*-+!";
+
+    token *tk = initializeTokenizer(data, separator);
+    char *current = tk->data;
+
+    while((current = getNextToken(tk, current)))
+    {
+        printf("%s\n", current);
+        current = moveToNextToken(current);
+    }
+
+    /*
+     Expected output:
+     Hello
+     World
+     u
+     pouet
+     */
+
+    // Free allocated memory
+    free(tk);
+    return 0;
+}
