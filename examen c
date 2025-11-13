@@ -1,0 +1,304 @@
+examen 
+
+Examen : C/UNIX
+Instructions
+Durée : 2 heure
+Note totale / maximal : 20 points
+Des points bonnus peuvent être caché !
+Les réponses doivent être argumentés
+Compréhenssion language C
+Question (1 points)
+Expliquez la différence entre les deux extraits de code suivants :
+
+int error = unefonction();
+if (error)
+  printf("C'est ballo'");
+int error = unefonction();
+if (error != 0)
+    printf("C'est ballo'");
+Réponse idéale :
+
+Les deux extraits de code vérifient si la variable error est différente de zéro. En C, toute condition différente de zéro est considérée comme vraie. Ainsi, les deux extraits sont équivalents.
+
+Question (2 points)
+Quelle sera la sortie du code suivant ? Expliquez pourquoi.
+
+int a = 0;
+int b = 2;
+
+if (a = b)
+    printf("Magie magie");
+
+if (a == b)
+    printf("Oups");
+Réponse idéale :
+
+La sortie sera :
+
+Magie magieOups
+Explication :
+
+if (a = b) utilise l'opérateur d'affectation = au lieu de l'opérateur de comparaison ==. Cela affecte la valeur de b à a, donc a devient 2. La condition est vraie (car 2 est différent de 0), donc "Magie magie" est imprimé.
+if (a == b) compare a et b, qui sont tous les deux égaux à 2, donc "Oups" est affiché.
+Question (1 points)
+Expliquez le rôle du mot-clé break dans une boucle. Donnez un exemple.
+
+Réponse idéale :
+
+Le mot-clé break est utilisé pour sortir prématurément d'une boucle. Par exemple :
+
+for (int i = 0; i < 10; i++) {
+    if (i == 5)
+        break;
+    printf("%d ", i);
+}
+Le précédent donne la même éxécution que celui-ci
+
+for (int i = 0; i < 5; i++) {
+    printf("%d ", i);
+}
+Question (1 points)
+Quelle est la taille de la structure suivante ? Expliquez pourquoi.
+
+struct Vec2i {
+    int a;
+    char b;
+};
+Réponse accepté :
+
+La structure contient deux entiers (int et char), respectivement 4 octets et 1 octet.
+La taille totale est donc 4 + 1 = 5 octets (en principe).
+Réponse idéal (2 pts bonnus) :
+
+Un alignement mémoire (ou "padding") est presque effectué par défaut par le compilateur (peu être désactivé). Cela signifie que le membre char sera suivi de 3 octets de remplissage pour aligner la taille totale de la structure sur un multiple de la taille du plus grand type contenu dans la structure (ici, 4 octets pour int).
+La taille totale est donc 8 octets (en pratique).
+Question (2 points)
+Écrivez une fonction en C qui itérère sur une chaine de charactère et compte le nombre de digit. Par exemple la chaine "La réponse est 42" devra retourné 2, utiliser uniquement des pointeurs. La chaîne contient l'élément terminal '\0'.
+
+Réponse correct :
+
+int count_digit(char *string) {
+    int count = 0;
+    while (*string) {
+        if (*string >= '0' && *string <= 9)
+           count++;
+        string++;
+    }
+    return count;
+}
+Réponse idéale (1 pts bonnus) :
+
+int count_digit(char *string) {
+    int count = 0;
+    for (; *string ; string++)
+        count += (*string >= '0' && *string <= '9');
+    return count;
+}
+Question (1 points)
+Écrivez une ligne de code en C qui vérifie si deux entier on un signe opposé. Exemple:
+
+int a = -1, b=1 renvoie 1
+int a = -1, b = -1 renvoie 0
+int a = 0, b = -1 renvoie 1
+Réponse correct :
+
+int result = (a < 0 && b > 0) || (a > 0 && b < 0);
+Réponse idéal (1pts bonnux) :
+
+Nous pouvons utiliser l'opérateur XOR ^, qui met tous les bits identiques à 0 et les bits différents à 1, y compris le bit de signe. Ainsi, si le bit de signe des deux entiers est identique, le résultat a un bit de signe à 0, ce qui signifie un nombre positif. À l'inverse, s'ils sont différents, le bit de signe devient 1, indiquant un nombre négatif. Donc, si le résultat est un nombre négatif, alors a et b sont de signes opposés.
+
+int result = ((a ^ b) < 0);
+Question (4 points)
+Expliquer le code suivant.
+
+Quel est sont intérét ?
+Qu'est ce qui aurait pu être amélioré pour la lisibilité ?
+Proposé un code d'exemple illustrant l'utilisation de ces fonctions
+En cas d'oublie d'appel a rc_incref ou rc_decref que ce passe t'il ?
+Quel signal sera envoyé par le noyaux ?
+void *rc_malloc(size_t size) {
+    int *ptr = malloc(size + sizeof(int));
+    if (!ptr)
+        return NULL;
+    *ptr = 1;
+    return ptr + 1;
+}
+
+void rc_incref(void *ptr) {
+    if (ptr) {
+        int *count = (int*)ptr - 1;
+        (*count)++;
+    }
+}
+
+void* rc_decref(void *ptr) {
+    if (ptr) {
+        int *count = (int*)ptr - 1;
+        (*count)--;
+        if (*count == 0) {
+            free(count);
+            return NULL;
+        }
+    }
+    return ptr;
+}
+Réponse correct :
+
+Ce code implémente un système de comptage de références en C pour gérer dynamiquement la mémoire allouée. Il permet de suivre combien de parties du programme utilisent une même allocation mémoire et de la libérer automatiquement lorsque plus personne ne l’utilise.
+
+Actuellement, le code utilise un int caché avant la zone mémoire. Une struct rendrait la gestion plus claire.
+
+typedef struct {
+    int ref_count;
+    void *data;
+} RcBlock;
+Voici un code d'exemple :
+
+void test_ref_count(void *ptr) {
+    rc_incref(*ptr);
+    *ptr = rc_decref(*ptr);
+}
+
+int main() {
+    int *num = (int*)rc_malloc(sizeof(int));
+    
+    if (!num) {
+        printf("Échec d'allocation mémoire\n");
+        return 1;
+    }
+
+    *num = 42;
+    printf("Valeur initiale : %d\n", *num);
+
+    test_ref_count((void**)&num);
+
+    num = rc_decref(num);
+    if (!num)
+        printf("Mémoire libérée automatiquement.\n");
+
+    return 0;
+}
+Si on oublie d'appeler rc_decref on obtient une fuite mémoire et inverssement, si on oublie rc_incref on peu libéré une mémoire prématurément, il existe donc quelque part dans le programme un pointeur en direction d'une mémoire désallouer. Sont utilisation engendrera probablement un SIGSEGV. De plus s'il on utilise l'une de ces deux fonctions sans avoir utilise rc_malloc des access mémoire non autorisé seront fait (underflow).
+
+Synchronisation des processus
+Documentation
+#include <semaphore.h>
+#include <pthread.h>
+
+int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr);
+int pthread_mutex_destroy(pthread_mutex_t * mutex); 
+int pthread_mutex_lock(pthread_mutex_t *mutex);
+int pthread_mutex_trylock(pthread_mutex_t *mutex);
+int pthread_mutex_unlock(pthread_mutex_t *mutex);
+
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int pthread_join(pthread_t thread, void **value_ptr);
+
+int sem_init(sem_t *sem, int pshared, unsigned int value);
+int sem_trywait(sem_t *sem);
+int sem_wait(sem_t *sp);
+int sem_post(sem_t *sp);
+Question (2pts)
+Expliquez les limitations de l'utilisation de fork() pour la création de processus et comment les threads POSIX (Pthreads) les surmontent.
+
+Réponse idéale :
+
+Les limitations de fork() incluent :
+
+Coût élevé : La création d'un nouveau processus est coûteuse en termes de CPU et de mémoire.
+Mémoire non partagée : Les processus créés par fork() n'ont pas de mémoire partagée par défaut, nécessitant des mécanismes IPC supplémentaires.
+Processus zombies : Si un parent ne récupère pas correctement le statut de ses enfants, ces derniers peuvent devenir des zombies.
+Les threads POSIX (Pthreads) surmontent ces limitations en permettant la création de threads au sein d'un même processus, partageant ainsi la même mémoire et ressources, ce qui est moins coûteux et facilite la communication interne.
+
+Question (6pts)
+Dans le code ci-dessus, seulement deux thread sont utilisés, expliquez :
+
+Le rôle des sémaphores sem_empty et sem_full dans la gestion du buffer circulaire.
+Pourquoi sont-ils nécessaires et comment contribuent-ils à la synchronisation entre le producteur et le consommateur ?
+Faut'il ajouter une section critique a l'aide d'un mutex dans le scénario actuel, si oui/non pourqoi ?
+Ce code fonctionne t'il avec d'avantage de thread (producteur et/ou consommateur), si oui pourquoi ? sinon modifier le code
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define BUFFER_SIZE 5
+
+int buffer[BUFFER_SIZE];
+int in = 0, out = 0;
+
+pthread_mutex_t mutex_buffer;
+sem_t sem_empty;
+sem_t sem_full;
+
+void* producteur(void* arg) {
+    while (1) {
+        int data = rand() % 100; // Génère un nombre aléatoire
+        printf("Producteur : Donnée produite = %d\n", data);
+
+        sem_wait(&sem_empty);
+
+        buffer[in] = data;
+        in = (in + 1) % BUFFER_SIZE;
+        printf("Producteur : Donnée ajoutée au buffer\n");
+
+        sem_post(&sem_full);
+    }
+
+    return NULL;
+}
+
+void* consommateur(void* arg) {
+    while (1) {
+        sem_wait(&sem_full);
+
+        int data = buffer[out];
+        out = (out + 1) % BUFFER_SIZE;
+        printf("Consommateur : Donnée retirée = %d\n", data);
+
+        sem_post(&sem_empty);
+
+        printf("Consommateur : Traitement de la donnée...\n");
+        sleep(2); // Simule le temps de traitement
+    }
+
+    return NULL;
+}
+
+int main() {
+    pthread_t producteur_thread, consommateur_thread;
+
+    sem_init(&sem_empty, 0, BUFFER_SIZE);
+    sem_init(&sem_full, 0, 0);
+
+    pthread_create(&producteur_thread, NULL, producteur, NULL);
+    pthread_create(&consommateur_thread, NULL, consommateur, NULL);
+
+    pthread_join(producteur_thread, NULL);
+    pthread_join(consommateur_thread, NULL);
+
+    sem_destroy(&sem_empty);
+    sem_destroy(&sem_full);
+
+    return 0;
+}
+Réponse idéale :
+
+L'utilisation des semaphore permet :
+
+Ils empêchent le producteur d'ajouter des données dans un buffer plein et le consommateur de retirer des données d'un buffer vide. Cela est particulièrement utile pour éviter les erreurs de débordement ou de lecture de données inexistantes.
+Les sémaphores aident à synchroniser le flux de données entre le producteur et le consommateur. Par exemple, si le consommateur traite les données plus lentement que le producteur les génère, les sémaphores empêchent le producteur de continuer à produire sans que le consommateur ait traité les données précédentes.
+Dans ce scénario, nous n'avons que deux threads : un producteur et un consommateur. Chaque thread modifie une zone mémoire spécifique à son usage, et les sémaphores garantissent qu'il n'y a jamais de chevauchement entre les opérations de lecture et d'écriture. Par conséquent, l'utilisation d'un mutex n'est pas nécessaire dans ce cas précis.
+
+Cependant, si d'autres threads étaient ajoutés, il serait crucial de protéger les variables in et out à l'aide d'un mutex pour éviter les accès concurrents et assurer la cohérence des données. Dans ce scénario, les modifications suivantes sont nécéssaires :
+
+    // dans le consomateur et le producteur encadrer les access au buffer et têtes par lock & unlock
+    pthread_mutex_lock(&mutex_buffer);
+    int data = buffer[out];
+    out = (out + 1) % BUFFER_SIZE;
+    pthread_mutex_unlock(&mutex_buffer);
+        
+    // dans le main
+    pthread_mutex_init(&mutex_buffer, NULL);
+    pthread_mutex_destroy(&mutex_buffer);
